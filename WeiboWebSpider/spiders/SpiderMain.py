@@ -10,10 +10,13 @@ def url_generator_for_id(_id):
 
 
 def url_generator_from_follow_him(follow_url):
-    pa = re.compile(r'uid=(.*?)&')
-    _id = pa.search(follow_url).group(1)
-    tweet_url, follower_url = url_generator_for_id(_id)
-    return tweet_url, follower_url
+    try:
+        pa = re.compile(r'uid=(.*?)&')
+        _id = pa.search(follow_url).group(1)
+        tweet_url, follower_url = url_generator_for_id(_id)
+        return tweet_url, follower_url
+    except:
+        return None
 
 
 def find_basic_info(target, basic_info_html):
@@ -25,32 +28,40 @@ def find_basic_info(target, basic_info_html):
     return content
 
 
-def img_extractor(html_content):
+def img_extractor(html_content):  # xpath遇到不存在节点就报错，特殊处理
+    img_num, img_urls = '', ''
+    flag = 0
     try:
         if html_content.xpath("div[1]/a[1]/text()") is not None and html_content.xpath("div[1]/a[1]/text()").extract_first()[:3] == '组图共':   # 组图流
             content = html_content.xpath("div[1]").extract_first()
+            img_urls = re.findall("\[<a href=\"(.*?)\">组图共", content)[0]
             img_num = html_content.xpath("div[1]/a[1]/text()").extract_first()[3]
-            img_urls = re.findall("href\=\"(.*?)\">组图共", content)[0]
-        elif html_content.xpath("div[1]/span[@class='ctt']/a/text()") is not None and html_content.xpath("div[1]/span[@class='ctt']/a/text()").extract_first()[-4:] == '秒拍视频':   #视频流
+            flag = 1
+    except:
+        pass
+    try:
+        if html_content.xpath("div[1]/span[@class='ctt']/a/text()") is not None and html_content.xpath("div[1]/span[@class='ctt']/a/text()").extract_first()[-4:] == '秒拍视频' and flag is not 1:   #视频流
             content = html_content.xpath("div[1]/span[@class='ctt']").extract_first()
             img_num = 'video'
-            img_urls = re.findall("href\=\"(.*?)\">.*?秒拍视频", content)[0]
-        elif html_content.xpath("div[2]/a[1]/img[@class='ib']"):   # 一图流
-            content = html_content.xpath("div[2]").extract_first()
-            img_num = '1'
-            img_urls = re.findall("href\=\"(.*?)\">原图", content)[0]
-        else:
-            img_num = ''
-            img_urls = ''
+            img_urls = re.findall("href=\"(.*?)\">.*?秒拍视频", content)[0]
+            flag = 2
     except:
-        img_num = ''
-        img_urls = ''
+        pass
+    try:
+        if html_content.xpath("div[2]/a[1]/img") is not None and flag is not 1 and flag is not 2:   # 一图流
+            content = html_content.xpath("div[2]/a[2]").extract_first()
+            img_urls = re.findall("href=\"(.*?)\">原图", content)[0]
+            img_num = '1'
+    except:
+        pass
+
     return img_num, img_urls
 
 
 class WeiboWebSpider(scrapy.Spider):
     name = 'WeiboWebSpider'
     start_ids = [
+        '5501440198',      # 测试
         '2936059657'      # GIF博士
     ]
 
@@ -78,13 +89,14 @@ class WeiboWebSpider(scrapy.Spider):
             yield scrapy.Request(follower_url, callback=self.parse_follower)
         try:
             next_page = selector.xpath(r"body/div[@class='pa']/form/div/a/@href").extract_first()
+            next_page = 'http://weibo.cn' + next_page
             yield scrapy.Request(url=next_page, callback=self.parse_follower)
         except:
             pass
 
     def parse_tweet(self, response):
         selector = scrapy.Selector(response)
-        for each_tweet in selector.xpath(r"body/div[@class='c']"):
+        for each_tweet in selector.xpath(r"body/div[@class='c' and @id]"):
             item = WeiboWebTweetsItem()
             try:
                 item['ID'] = each_tweet.xpath('@id').extract_first()
@@ -106,6 +118,7 @@ class WeiboWebSpider(scrapy.Spider):
         # 尝试寻找下一页并生成Request
         try:
             next_page = selector.xpath(r"body/div[@class='pa']/form/div/a/@href").extract_first()
+            next_page = 'http://weibo.cn' + next_page
             yield scrapy.Request(url=next_page, callback=self.parse_tweet)
         except:
             pass
