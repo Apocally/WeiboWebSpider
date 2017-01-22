@@ -1,7 +1,9 @@
 # WeiboWebSpider
 一个爬取微博WAP端的程序，通过关注列表收集个人、每一条微博的信息。
-##运行环境：
-python 3.6 [安装方法](http://www.cnblogs.com/hhh5460/p/5814275.html)
+## 运行环境：
+* python 3.6 [安装方法](http://www.cnblogs.com/hhh5460/p/5814275.html)
+* MongoDB，PhantomJS
+* 相关第三方库：Scrapy以及相关依赖库，Pymongo，Selenium等
 ## 简介
 1. 用 selenium+PhantomJS 模拟登录weibo.cn，获取cookies
 2. scrapy 爬取新浪微博个人信息、微博信息
