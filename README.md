@@ -1,4 +1,5 @@
 # WeiboWebSpider
+一个爬取微博WAP端的程序，通过关注列表收集个人、每一条微博的信息。
 ##运行环境：
 python 3.6 [安装方法](http://www.cnblogs.com/hhh5460/p/5814275.html)
 ## 简介
