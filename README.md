@@ -1,7 +1,6 @@
 # WeiboWebSpider
 ##运行环境：
-python 3.6
-
+python 3.6 [安装方法](http://www.cnblogs.com/hhh5460/p/5814275.html)
 ## 简介
 1. 用 selenium+PhantomJS 模拟登录weibo.cn，获取cookies
 2. scrapy 爬取新浪微博个人信息、微博信息
